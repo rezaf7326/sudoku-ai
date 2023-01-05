@@ -1,5 +1,5 @@
 import json
-from algorithm import BacktrackingSudoku
+from algorithm import BacktrackingSudoku, BacktrackingSudokuMRV
 
 
 puzzle_1 = {
@@ -33,7 +33,8 @@ puzzle_2 = {
 
 def test(puzzle_json_str):
     obj = json.loads(puzzle_json_str)
-    backtracking = BacktrackingSudoku(obj.get("sudoku"))
+    # backtracking = BacktrackingSudoku(obj.get("sudoku"))
+    backtracking = BacktrackingSudokuMRV(obj.get("sudoku"))
     backtracking.search()
 
     print('puzzle search result:')

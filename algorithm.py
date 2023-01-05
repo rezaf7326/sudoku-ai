@@ -31,7 +31,7 @@ class BacktrackingSudoku:
         if self.__is_sudoku_solved(sudoku):
             return sudoku
 
-        var_i, var_j, domain = self.__var_selector(sudoku)
+        var_i, var_j, domain = self._var_selector(sudoku)
 
         for value in domain:
             if not self.__is_consistent(sudoku, var_i, var_j, value):
@@ -42,8 +42,8 @@ class BacktrackingSudoku:
                 return result
             sudoku[var_i][var_j] = 0
 
-    @staticmethod
-    def __var_selector(sudoku):
+    # as protected method:
+    def _var_selector(self, sudoku):
         for i in range(len(sudoku)):
             for j in range(len(sudoku)):
                 if sudoku[i][j] == 0:
@@ -82,3 +82,59 @@ class BacktrackingSudoku:
                     return False
 
         return True
+
+
+# backtracking with MRV heuristic:
+class BacktrackingSudokuMRV(BacktrackingSudoku):
+    def __init__(self, sudoku):
+        super().__init__(sudoku)
+
+    def _var_selector(self, sudoku):
+        min_domains = self.__mrv_domains(sudoku)
+
+        if not min_domains:
+            return None, None, None
+
+        var = min_domains.popitem()
+        return var[0][0], var[0][1], var[1]
+
+    @staticmethod
+    def __mrv_domains(sudoku):
+        domains_dict = {}
+        for i in range(len(sudoku)):
+            for j in range(len(sudoku)):
+                if sudoku[i][j] == 0:
+                    domains_dict[i, j] = set(range(1, len(sudoku) + 1))
+
+        sqrt_n = int(math.sqrt(len(sudoku)))
+
+        for i in range(len(sudoku)):
+            for j in range(len(sudoku)):
+                if type(sudoku[i][j]) is not set:
+                    qs = range(sqrt_n)
+                    block_i = int(i / sqrt_n)
+                    block_i_set = {block_i * sqrt_n + q for q in qs}
+                    block_j = int(j / sqrt_n)
+                    block_j_set = {block_j * sqrt_n + q for q in qs}
+
+                    for k in domains_dict.keys():
+                        # are in same "row" | "column" | "sub-block"
+                        if k[0] == i or k[1] == j or (k[0] in block_i_set and k[1] in block_j_set):
+                            domains_dict[k].discard(sudoku[i][j])
+
+        min_remaining_val = None
+        for domain in domains_dict.values():
+            if min_remaining_val is not None:
+                min_remaining_val = min(min_remaining_val, len(domain))
+            else:
+                min_remaining_val = len(domain)
+
+        # sudoku can't be solved
+        if min_remaining_val == 0:
+            return None
+
+        min_domains = {k: domains_dict[k]
+                       for k in domains_dict.keys()
+                       if len(domains_dict[k]) == min_remaining_val}
+
+        return min_domains
